@@ -5,10 +5,9 @@ use derive_new::new as New;
 
 // https://en.uesp.net/wiki/Oblivion_Mod:Save_File_Format
 
+// TODO: Should we just convert from this structure to a proper datetime object?
 #[derive(Debug)]
 /// See: https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlocaltime
-///
-/// TODO: Should we just convert from this structure to a proper datetime object?
 pub struct SysTime {
     pub(crate) year: u16,
     pub(crate) month: u16,
@@ -50,13 +49,13 @@ pub struct FileHeader {
     pub exe_time: Option<SysTime>,
 }
 
+#[allow(clippy::too_many_arguments)]
 #[derive(New, Debug)]
 pub struct SaveGameHeader {
     /// Should be equal to FileHeader::minor_version for any particular ESS file.
     pub header_version: u32,
 
     // Skipping saveHeaderSize: lol?
-
     /// Save number. Used in default save filename.
     pub save_number: u32,
 

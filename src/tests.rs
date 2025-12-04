@@ -13,6 +13,4 @@ fn read_save_325() {
     assert_eq!(exe_time.year, 2022);
     assert_eq!(exe_time.month, 6);
     assert_eq!(exe_time.day, 2);
-
-    panic!("{:#?}", ess.save_game_header);
 }

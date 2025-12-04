@@ -3,16 +3,16 @@ use thiserror::Error;
 #[non_exhaustive]
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
-    #[error("unexpected end of file while parsing header")]
+    #[error("Unexpected end of file while parsing header")]
     NoHeader,
 
-    #[error("file contains Xbox 360 File Container metadata")]
+    #[error("File contains Xbox 360 File Container metadata")]
     XboxContainer,
 
-    #[error("invalid file ID: expected 'TES4SAVEGAME', got: '{0:?}'")]
-    BadFileHeader([u8; 12]),
+    #[error("Invalid file ID: expected 'TES4SAVEGAME', got: '{0:?}'")]
+    BadFileID([u8; 12]),
 
-    #[error("unexpected end of file")]
+    #[error("Unexpected end of file")]
     UnexpectedEOF,
 }
 

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 derive-new = "0.7.0"
+derive_more = { version = "2.1.0", features = ["deref", "deref_mut", "from"] }
 encoding_rs = "0.8.35"
 itermore = { version = "0.8.0", features = ["next_chunk"] }
 thiserror = "2.0.17"
