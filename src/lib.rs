@@ -20,7 +20,9 @@ macro_rules! err {
     };
 }
 
-pub fn parse_record<I: Iterator<Item = u8>>(_scanner: &mut Scanner<'_, I>) -> Result<Record> {
+pub fn parse_record<I: Iterator<Item = u8>>(
+    _scanner: &mut Scanner<'_, I>,
+) -> Result<Record> {
     todo!("create record parser")
 }
 
