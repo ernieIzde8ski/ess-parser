@@ -1,0 +1,9 @@
+[package]
+name = "ess-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+derive-new = "0.7.0"
+itermore = { version = "0.8.0", features = ["next_chunk"] }
+thiserror = "2.0.17"

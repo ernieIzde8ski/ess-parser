@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+  # thanks: https://github.com/doublify/pre-commit-rust/blob/master/.pre-commit-hooks.yaml
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        description: Format files with cargo fmt.
+        entry: cargo fmt
+        language: rust
+        types: [rust]
+        args: ["--"]
+      - id: clippy
+        name: clippy
+        description: Lint rust sources
+        entry: cargo clippy
+        language: rust
+        args: ["--", "-D", "warnings"]
+        types: [rust]
+        pass_filenames: false
