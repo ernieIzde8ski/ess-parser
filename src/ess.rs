@@ -1,5 +1,9 @@
 #![allow(dead_code)]
+use std::fmt::Debug;
+
 use derive_new::new as New;
+
+// https://en.uesp.net/wiki/Oblivion_Mod:Save_File_Format
 
 #[derive(Debug)]
 /// See: https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlocaltime
@@ -17,6 +21,23 @@ pub struct SysTime {
 }
 
 #[derive(New, Debug)]
+pub struct RGB(u8, u8, u8);
+
+/// TODO: Make this smarter lmao
+#[derive(New)]
+pub struct Screenshot {
+    width: u32,
+    height: u32,
+    screen: Box<[RGB]>,
+}
+
+impl Debug for Screenshot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("Screenshot ({}x{})", self.width, self.height))
+    }
+}
+
+#[derive(New, Debug)]
 pub struct FileHeader {
     pub file_id: String,
     /// Should always be zero.
@@ -29,8 +50,42 @@ pub struct FileHeader {
     pub exe_time: Option<SysTime>,
 }
 
+#[derive(New, Debug)]
+pub struct SaveGameHeader {
+    /// Should be equal to FileHeader::minor_version for any particular ESS file.
+    pub header_version: u32,
+
+    // Skipping saveHeaderSize: lol?
+
+    /// Save number. Used in default save filename.
+    pub save_number: u32,
+
+    /// Player name.
+    pub name: String,
+    /// Player level.
+    pub level: u16,
+    /// Player's current location.
+    pub cell: String,
+
+    /// Days that have passed in-game.
+    pub game_days: f32,
+
+    /// Total number of ticks elapsed uring gameplay.
+    /// Equivalent to milliseconds spent in-game.
+    pub game_ticks: u32,
+
+    /// Real time at which the save file was created.
+    ///
+    /// TODO: Figure out why FileHeader::exe_time was introduced.
+    pub game_time: SysTime,
+
+    /// Screenshot at time of save.
+    pub screenshot: Screenshot,
+}
+
 /// An Elder Scrolls (IV) Save.
 #[derive(New, Debug)]
 pub struct ESS {
     pub file_header: FileHeader,
+    pub save_game_header: SaveGameHeader,
 }

@@ -1,3 +1,5 @@
+// TODO: https://github.com/rust-lang/rust/issues/98326
+// - Remove dependency on stabilization
 use itermore::IterNextChunk;
 
 /// Helper methods to get little-end bytes out of a byte iterator
@@ -19,6 +21,13 @@ pub trait BytesLE: Iterator<Item = u8> {
         Self: Sized,
     {
         self.next_array().ok().map(u32::from_le_bytes)
+    }
+
+    fn next_f32(&mut self) -> Option<f32>
+    where
+        Self: Sized,
+    {
+        self.next_array().ok().map(f32::from_le_bytes)
     }
 }
 
