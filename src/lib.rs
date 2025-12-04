@@ -50,6 +50,9 @@ pub fn parse<I: Iterator<Item = u8>>(file_bytes: &mut I) -> Result<ESS> {
     let file_header = FileHeader::new(file_id, major_version, minor_version, sys_time);
 
     ////////////// FILE HEADER //////////////
+    /////////////////////////////////////////
+
+    /////////////////////////////////////////
     ////////////// SAVE HEADER //////////////
 
     let header_version = scanner.u32()?;
@@ -72,9 +75,9 @@ pub fn parse<I: Iterator<Item = u8>>(file_bytes: &mut I) -> Result<ESS> {
         let width = scanner.u32()?;
         let height = scanner.u32()?;
         debug_assert_eq!(size, width * height * 3 + 8);
-        let screen: Box<[RGB]> = {
+        let screen: List<RGB> = {
             let size = width * height * 3;
-            let bytes: Box<[u8]> = scanner.take(size as usize).collect();
+            let bytes: List<u8> = scanner.take(size as usize).collect();
             bytes
                 .chunks(3)
                 .map(|c| RGB::new(c[0], c[1], c[2]))
@@ -96,8 +99,22 @@ pub fn parse<I: Iterator<Item = u8>>(file_bytes: &mut I) -> Result<ESS> {
     );
 
     ////////////// SAVE HEADER //////////////
+    /////////////////////////////////////////
 
-    Ok(ESS::new(file_header, save_header))
+    /////////////////////////////////////////
+    //////////////// PLUGINS ////////////////
+
+    type Plugins = List<String>;
+    let plugins: Plugins = {
+        let len = scanner.u8()?;
+        let plugins: Result<Plugins> = (0..len).map(|_| scanner.bstring()).collect();
+        plugins?
+    };
+
+    //////////////// PLUGINS ////////////////
+    /////////////////////////////////////////
+
+    Ok(ESS::new(file_header, save_header, plugins))
 }
 
 #[cfg(test)]

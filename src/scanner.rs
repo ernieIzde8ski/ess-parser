@@ -4,6 +4,7 @@ use encoding_rs::WINDOWS_1252;
 use itermore::IterNextChunk as _;
 
 use crate::Error;
+use crate::List;
 use crate::Result;
 use crate::SysTime;
 use crate::result_helper::ResultHelper;
@@ -12,6 +13,18 @@ use crate::result_helper::ResultHelper;
 pub struct Scanner<'a, I: Iterator<Item = u8>>(&'a mut I);
 
 impl<'a, I: Iterator<Item = u8>> Scanner<'a, I> {
+    /// Shorthand for WINDOWS_1252.decode(...)
+    #[inline]
+    fn decode_bytes(bytes: &[u8]) -> String {
+        WINDOWS_1252.decode(bytes).0.into()
+    }
+
+    /// Shorthand for WINDOWS_1252.decode(...)
+    #[inline]
+    fn decode_iter<J: Iterator<Item = u8>>(bytes: J) -> String {
+        let bytes: List<u8> = bytes.collect();
+        Self::decode_bytes(&bytes)
+    }
     pub fn u8(&mut self) -> Result<u8> {
         self.next().map(u8::from_le).ok_or(Error::UnexpectedEOF)
     }
@@ -68,11 +81,19 @@ impl<'a, I: Iterator<Item = u8>> Scanner<'a, I> {
         })
     }
 
-    /// Read a length-prefaced, zero-terminated string.
+    /// Read a byte-length-prefaced string.
+    pub fn bstring(&mut self) -> Result<String> {
+        let len = self.u8()? as usize;
+        let encoded_bytes = self.take(len);
+        let res = Self::decode_iter(encoded_bytes);
+        Ok(res)
+    }
+
+    /// Read a byte-length-prefaced, zero-terminated string.
     pub fn bzstring(&mut self) -> Result<String> {
         let len = self.u8()? as usize;
-        let encoded_bytes: Vec<u8> = self.take(len).take_while(|b| *b != 0).collect();
-        let (cowstr, _, _) = WINDOWS_1252.decode(&encoded_bytes);
-        Ok(cowstr.into())
+        let encoded_bytes = self.take(len).take_while(|b| *b != 0);
+        let res = Self::decode_iter(encoded_bytes);
+        Ok(res)
     }
 }

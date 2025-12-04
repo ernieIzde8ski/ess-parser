@@ -5,6 +5,9 @@ use derive_new::new as New;
 
 // https://en.uesp.net/wiki/Oblivion_Mod:Save_File_Format
 
+/// An immutable list. Like an owned slice.
+pub type List<T> = Box<[T]>;
+
 // TODO: Should we just convert from this structure to a proper datetime object?
 #[derive(Debug)]
 /// See: https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlocaltime
@@ -27,7 +30,7 @@ pub struct RGB(u8, u8, u8);
 pub struct Screenshot {
     width: u32,
     height: u32,
-    screen: Box<[RGB]>,
+    screen: List<RGB>,
 }
 
 impl Debug for Screenshot {
@@ -87,4 +90,5 @@ pub struct SaveGameHeader {
 pub struct ESS {
     pub file_header: FileHeader,
     pub save_game_header: SaveGameHeader,
+    pub plugins: List<String>,
 }
