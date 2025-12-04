@@ -1,10 +1,10 @@
 mod error;
-mod ess;
+mod model;
 pub(crate) mod result_helper;
 mod scanner;
 
 pub use error::*;
-pub use ess::*;
+pub use model::*;
 
 use error::ParseError as Error;
 use error::ParseResult as Result;
@@ -20,7 +20,11 @@ macro_rules! err {
     };
 }
 
-pub fn parse<I: Iterator<Item = u8>>(file_bytes: &mut I) -> Result<ESS> {
+pub fn parse_record<I: Iterator<Item = u8>>(_scanner: &mut Scanner<'_, I>) -> Result<Record> {
+    todo!("create record parser")
+}
+
+pub fn parse_ess<I: Iterator<Item = u8>>(file_bytes: &mut I) -> Result<ESS> {
     let mut scanner: Scanner<'_, I> = Scanner::new(file_bytes);
 
     ////////////// FILE HEADER //////////////
@@ -114,7 +118,111 @@ pub fn parse<I: Iterator<Item = u8>>(file_bytes: &mut I) -> Result<ESS> {
     //////////////// PLUGINS ////////////////
     /////////////////////////////////////////
 
-    Ok(ESS::new(file_header, save_header, plugins))
+    /////////////////////////////////////////
+    //////////////// GLOBALS ////////////////
+
+    let _form_ids_offset = scanner.u32()?;
+    let _records_length = scanner.form_id()?; // not gonna need THIS for a while
+    let next_object_id = scanner.form_id()?;
+    let world_id = scanner.form_id()?;
+    let world_x = scanner.u32()?;
+    let world_y = scanner.u32()?;
+    let player_location = PlayerLocation::new(
+        scanner.form_id()?,
+        scanner.f32()?,
+        scanner.f32()?,
+        scanner.f32()?,
+    );
+    let globals = {
+        let len = scanner.u16()?;
+        let mut res = vec![];
+        for _ in 0..len {
+            let iref = scanner.iref()?;
+            let data = scanner.f32()?;
+            res.push((iref, data));
+        }
+        res.into_boxed_slice()
+    };
+    let death_counts = {
+        let _ = scanner.u16()?;
+        let len = scanner.u32()?;
+        let mut death_counts = vec![];
+        for _ in 0..len {
+            death_counts.push(DeathCount::new(scanner.iref()?, scanner.u16()?))
+        }
+        death_counts.into_boxed_slice()
+    };
+    let game_mode_seconds = scanner.f32()?;
+    let processes: List<u8> = {
+        let len = scanner.u16()?;
+        scanner.take(len as usize).collect()
+    };
+    let spectator_events: List<u8> = {
+        let len = scanner.u16()?;
+        scanner.take(len as usize).collect()
+    };
+    let weather: List<u8> = {
+        let len = scanner.u16()?;
+        scanner.take(len as usize).collect()
+    };
+    let player_combat_count = scanner.u32()?;
+    let created_items: List<Record> = {
+        let len = scanner.u32()?;
+        let mut res = vec![];
+        for _ in 0..len {
+            let record = parse_record(&mut scanner)?;
+            res.push(record)
+        }
+        res.into_boxed_slice()
+    };
+    let quick_keys: List<Option<IRef>> = {
+        let len = scanner.u16()?;
+        (0..len)
+            .map(|_| match scanner.bool()? {
+                true => Ok(Some(scanner.iref()?)),
+                false => Ok(None),
+            })
+            .collect::<Result<List<_>>>()?
+    };
+    let reticule: List<u8> = {
+        let len = scanner.u16()?;
+        scanner.take(len as usize).collect()
+    };
+    let interface: List<u8> = {
+        let len = scanner.u16()?;
+        scanner.take(len as usize).collect()
+    };
+    let regions: List<Region> = {
+        let _ = scanner.u16()?; // ???
+        let len = scanner.u16()?;
+        let mut res = vec![];
+        for _ in 0..len {
+            let region = (scanner.iref()?, scanner.u32()?);
+            res.push(region);
+        }
+        res.into_boxed_slice()
+    };
+
+    let global = GlobalSection::new(
+        next_object_id,
+        world_id,
+        world_x,
+        world_y,
+        player_location,
+        globals,
+        death_counts,
+        game_mode_seconds,
+        processes,
+        spectator_events,
+        weather,
+        player_combat_count,
+        created_items,
+        quick_keys,
+        reticule,
+        interface,
+        regions,
+    );
+    Ok(ESS::new(file_header, save_header, plugins, global))
 }
 
 #[cfg(test)]

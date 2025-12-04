@@ -1,6 +1,16 @@
-#![allow(dead_code)]
+#![allow(dead_code, clippy::too_many_arguments)]
+
+mod record;
+mod screenshot;
+mod system_time;
+
+pub use record::*;
+pub use screenshot::*;
+pub use system_time::*;
+
 use std::fmt::Debug;
 
+use derive_more::*;
 use derive_new::new as New;
 
 // https://en.uesp.net/wiki/Oblivion_Mod:Save_File_Format
@@ -8,36 +18,9 @@ use derive_new::new as New;
 /// An immutable list. Like an owned slice.
 pub type List<T> = Box<[T]>;
 
-// TODO: Should we just convert from this structure to a proper datetime object?
-#[derive(Debug)]
-/// See: https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getlocaltime
-pub struct SysTime {
-    pub(crate) year: u16,
-    pub(crate) month: u16,
-    pub(crate) weekday: u16,
-    pub(crate) day: u16,
-    pub(crate) hour: u16,
-    pub(crate) minute: u16,
-    pub(crate) seconds: u16,
-    pub(crate) milliseconds: u16,
-}
-
-#[derive(New, Debug)]
-pub struct RGB(u8, u8, u8);
-
-/// TODO: Make this smarter lmao
-#[derive(New)]
-pub struct Screenshot {
-    width: u32,
-    height: u32,
-    screen: List<RGB>,
-}
-
-impl Debug for Screenshot {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("Screenshot ({}x{})", self.width, self.height))
-    }
-}
+#[repr(transparent)]
+#[derive(New, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FormID(u32);
 
 #[derive(New, Debug)]
 pub struct FileHeader {
@@ -85,10 +68,69 @@ pub struct SaveGameHeader {
     pub screenshot: Screenshot,
 }
 
+#[derive(New, Debug)]
+pub struct PlayerLocation {
+    /// "Not iref"
+    cell: FormID,
+    x: f32,
+    y: f32,
+    z: f32,
+}
+
+#[derive(New, Debug, Deref, PartialEq, Eq, PartialOrd, Ord)]
+pub struct IRef(u32);
+
+#[derive(New, Debug)]
+pub struct DeathCount {
+    actor: IRef,
+    /// Number of times this actor has died.
+    total: u16,
+}
+
+pub type Region = (IRef, u32);
+
+#[derive(New, Debug)]
+pub struct GlobalSection {
+    next_object_id: FormID,
+    world_id: FormID,
+    world_x: u32,
+    world_y: u32,
+
+    /// Player location - that is, cell location & position within cell.
+    player_location: PlayerLocation,
+
+    /// List of global variables, mapping from iref to value.
+    /// Always a float in this array, regardless of their real types.
+    globals: List<(IRef, f32)>,
+
+    death_counts: List<DeathCount>,
+
+    game_mode_seconds: f32,
+
+    /// "Processes data."
+    processes: List<u8>,
+    /// "Spectator Event data."
+    spectator_events: List<u8>,
+    /// "Sky/Weather data."
+    weather: List<u8>,
+
+    /// Number of actors in combat with the player.
+    player_combat_count: u32,
+    /// Items created in-game.
+    created_items: List<Record>,
+
+    quick_keys: List<Option<IRef>>,
+    // "HUD Reticule."
+    reticule: List<u8>,
+    interface: List<u8>,
+    regions: List<Region>,
+}
+
 /// An Elder Scrolls (IV) Save.
 #[derive(New, Debug)]
 pub struct ESS {
     pub file_header: FileHeader,
     pub save_game_header: SaveGameHeader,
     pub plugins: List<String>,
+    pub globals: GlobalSection,
 }

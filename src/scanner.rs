@@ -4,6 +4,8 @@ use encoding_rs::WINDOWS_1252;
 use itermore::IterNextChunk as _;
 
 use crate::Error;
+use crate::FormID;
+use crate::IRef;
 use crate::List;
 use crate::Result;
 use crate::SysTime;
@@ -25,6 +27,7 @@ impl<'a, I: Iterator<Item = u8>> Scanner<'a, I> {
         let bytes: List<u8> = bytes.collect();
         Self::decode_bytes(&bytes)
     }
+
     pub fn u8(&mut self) -> Result<u8> {
         self.next().map(u8::from_le).ok_or(Error::UnexpectedEOF)
     }
@@ -55,6 +58,12 @@ impl<'a, I: Iterator<Item = u8>> Scanner<'a, I> {
         self.next_array()
             .map(f32::from_le_bytes)
             .replace_err(Error::UnexpectedEOF)
+    }
+
+    pub fn bool(&mut self) -> Result<bool> {
+        let res = self.u8()?;
+        debug_assert!(res == 0 || res == 1);
+        Ok(res != 0)
     }
 
     /// Read a SysTime.
@@ -95,5 +104,15 @@ impl<'a, I: Iterator<Item = u8>> Scanner<'a, I> {
         let encoded_bytes = self.take(len).take_while(|b| *b != 0);
         let res = Self::decode_iter(encoded_bytes);
         Ok(res)
+    }
+
+    pub fn form_id(&mut self) -> Result<FormID> {
+        let res = self.u32()?;
+        Ok(FormID::new(res))
+    }
+
+    pub fn iref(&mut self) -> Result<IRef> {
+        let res = self.u32()?;
+        Ok(IRef::new(res))
     }
 }
